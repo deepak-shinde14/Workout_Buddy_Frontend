@@ -1,0 +1,350 @@
+--- Start of ./src\App.js ---
+import {BrowserRouter, Routes, Route } from 'react-router-dom'
+import Navbar from './components/Navbar';
+
+//pages& components
+import Home from './pages/Home';
+
+function App() {
+  return (
+    <div className="App">
+      <BrowserRouter>
+        <Navbar/>
+        <div className="Pages">
+          <Routes>
+            <Route
+              path='/'
+              element= {<Home />}
+            />
+          </Routes>
+        </div>
+      </BrowserRouter>
+    </div>
+  );
+}
+
+export default App;
+
+
+--- Start of ./src\index.css ---
+/* google font */
+
+@import url('https://fonts.googleapis.com/css?family=Poppin:wght@300;400;500;600;800&family=VT323&display=swap');
+
+/* layout */
+
+:root {
+  --primary: #1aac83;
+  --error:#e7195a;
+}
+
+body {
+  background: #f1f1f1;
+  margin: 0;
+  font-family: "Poppins";
+}
+
+header {
+  background:#fff;
+}
+
+header .container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+header a {
+  color: #333;
+  text-decoration: none;
+}
+  
+.pages{
+  max-width: 1400px;
+  padding: 20px;
+  margin: 0 auto;
+}
+/* homepage */
+
+.home{
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  gap: 100px;
+}
+
+.workout-details {
+  background:#fff;
+  border-radius: 4px;
+  margin: 20px auto;
+  padding: 20px;
+  position: relative;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+}
+
+.workout-details h4 {
+  margin: 0 0 10px 0;
+  font-size: 1.2em;
+  color: var(--primary);
+}
+.workout-details p {
+  margin: 0;
+  font-size: 0.9em;
+  color: #555;
+}
+
+.workout-details span {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  cursor: pointer;
+  background: #f1f1f1;
+  padding: 6px;
+  border-radius: 50%;
+  color: #333;
+}
+
+/* new workout form*/
+label, input {
+  display: block;
+}
+
+input {
+  padding: 10px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+form button {
+  background: var(--primary);
+  border: 0;
+  color: #fff;
+  padding: 10px;
+  font-family: "Poppins";
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+div.error {
+  padding: 10px;
+  background: #ffefef;
+  border: 1px solid var(--error);
+  color: var(--error);
+  border-radius: 4px;
+  margin: 20px 0;
+}
+
+--- Start of ./src\index.js ---
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './index.css';
+import App from './App';
+import { WorkoutContextProvider } from './context/WorkoutContext';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <WorkoutContextProvider>
+      <App />
+    </WorkoutContextProvider>
+  </React.StrictMode>
+);
+
+
+
+--- Start of ./src\components\Navbar.js ---
+import { Link } from "react-router-dom"
+
+const Navbar = () => {
+    return (
+        <header>
+            <div className="container">
+                <Link to= '/'>
+                    <h1>Workout Buddy</h1>
+                </Link>
+            </div>
+        </header>
+    )
+}
+
+export default Navbar
+
+--- Start of ./src\components\WorkoutDetails.js ---
+const WorkoutDetails = ({workout}) => {
+    return (
+        <div className="workout-details">
+            <h4>{workout.title}</h4>
+            <p><strong>Load (kg): </strong> {workout.load}</p>
+            <p><strong>Reps: </strong> {workout.reps}</p>
+            <p>{workout.createdAt}</p>
+        </div>
+    )
+}
+
+export default WorkoutDetails
+
+--- Start of ./src\components\WorkoutForm.js ---
+import { useState } from "react"
+import { useWorkoutContext } from "../hooks/useWorkoutContext"
+
+const WorkoutForm = () => {
+    const {dispatch} = useWorkoutContext()
+    const [title, setTitle] = useState('')
+    const [load, setLoad] = useState('')
+    const [reps, setReps] = useState('')
+    const [error, setError] = useState('')
+
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+
+        const workout = {title, load, reps}
+
+        const response = await fetch('/api/workouts', {
+            method: 'POST',
+            body: JSON.stringify(workout),
+            headers: {
+                'Content-Type': "application/json"
+            }
+        })
+        const json = await response.json()
+
+        if(!response.ok){
+            setError(json.error)
+        }
+        if(response.ok){
+            setTitle('')
+            setLoad('')
+            setReps('')
+            setError(null)
+            console.log('A New Workout Added', json);
+            dispatch({type: 'CREATE_WORKOUT', payload: json})
+        }
+    }
+
+    return (
+        <form className="create" onSubmit={handleSubmit}>
+            <h3>Add a New Workout</h3>
+            <label>Excercise Title:</label>
+            <input 
+                type="text"
+                onChange={ (e) => setTitle(e.target.value)} 
+                value={title}
+            />
+
+            <label>Load (kg):</label>
+            <input 
+                type="number"
+                onChange={ (e) => setLoad(e.target.value)} 
+                value={load}
+            />
+            
+            <label>Reps:</label>
+            <input 
+                type="number"
+                onChange={ (e) => setReps(e.target.value)} 
+                value={reps}
+            />
+
+            <button>Add Workout</button>
+            {error && <div className="error">{error}</div>}
+        </form>
+    )
+}
+
+export default WorkoutForm
+
+--- Start of ./src\context\WorkoutContext.js ---
+import { createContext, useReducer } from "react";
+
+export const WorkoutContext = createContext();
+
+export const WorkoutReducer = (state, action) => {
+    switch (action.type) {
+        case 'SET_WORKOUTS':
+            return {
+                workouts: action.payload
+            };
+
+        case 'CREATE_WORKOUT':
+            return {
+                workouts: [action.payload, ...state.workouts]
+            };
+
+        default:
+            return state;
+    }
+};
+
+export const WorkoutContextProvider = ({ children }) => {
+    const [state, dispatch] = useReducer(WorkoutReducer, {
+        workouts: null
+    });
+
+    return (
+        <WorkoutContext.Provider value={{ ...state, dispatch }}>
+            {children}
+        </WorkoutContext.Provider>
+    );
+};
+
+
+--- Start of ./src\hooks\useWorkoutContext.js ---
+import { WorkoutContext } from "../context/WorkoutContext";
+import { useContext } from "react";
+
+export const useWorkoutContext = () => {
+    const context = useContext(WorkoutContext)
+
+    if(!context){
+        throw Error('useWorkoutContext must be used inside WorkoutContextProvider')
+        
+    }
+
+    return context
+}
+
+--- Start of ./src\pages\Home.js ---
+import { useEffect } from "react";
+import { useWorkoutContext } from "../hooks/useWorkoutContext";
+
+//componets
+import WorkoutDetails from "../components/WorkoutDetails";
+import WorkoutForm from "../components/WorkoutForm"
+
+
+const Home = () => {
+    
+    const {workouts, dispatch} =useWorkoutContext()
+
+    useEffect(() => {
+        const fetchWorkouts = async () => {
+            const response = await fetch('/api/workouts');
+            const json = await response.json();
+            if (response.ok){
+                dispatch({type: 'SET_WORKOUTS', payload: json})
+            }
+        }
+        fetchWorkouts()
+    }, [])
+
+    return (
+        <div className="home">
+            <div className="workouts">
+                {workouts && workouts.map((workout) => (
+                    <WorkoutDetails key={workout._id} workout={workout} />
+                ))}
+            </div>
+            <WorkoutForm />
+
+        </div>
+    )
+}
+
+export default Home
+
